@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Trading Bot{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">Dashboard</h1>
+    <p>Welcome, {{ username }}! Here is a summary of your trading bot's status.</p>
+
+    <div class="grid-container">
+        <!-- Account Summary Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Account Summary</h3>
+                <span>(Broker: {{ account_summary.broker_name }})</span>
+            </div>
+            <div class="card-content">
+                <p><strong>Balance:</strong> ${{ account_summary.balance }}</p>
+                <p><strong>Equity:</strong> ${{ account_summary.equity }}</p>
+                <p><strong>Today's P/L:</strong>
+                    <span class="{% if account_summary.pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        ${{ account_summary.pnl }}
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Bot Status Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Bot Status</h3>
+            </div>
+            <div class="card-content">
+                <p><strong>Main Engine:</strong>
+                    <span class="status-badge status-{{ bot_status.engine_status | lower }}">
+                        {{ bot_status.engine_status }}
+                    </span>
+                </p>
+                <p><strong>Data Feeds:</strong>
+                     <span class="status-badge status-{{ bot_status.data_feeds_status | lower }}">
+                        {{ bot_status.data_feeds_status }}
+                    </span>
+                </p>
+                <p><strong>Last Activity:</strong> {{ bot_status.last_activity }}</p>
+            </div>
+        </div>
+
+        <!-- Active Strategies Card -->
+        <div class="card card-full-width">
+            <div class="card-header">
+                <h3>Active Strategies</h3>
+            </div>
+            <div class="card-content">
+                {% if active_strategies %}
+                    <ul>
+                    {% for strategy in active_strategies %}
+                        <li>
+                            <strong>{{ strategy.name }}</strong>
+                            (Running on {{ strategy.symbols_count }} symbols) -
+                            Status: <span class="status-badge status-{{ strategy.status | lower }}">{{ strategy.status }}</span>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No strategies are currently active.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,6 @@
+Flask
+pandas
+numpy
+requests
+cryptography
+websocket-client
