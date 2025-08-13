@@ -1,0 +1,18 @@
+{
+  "FERNET_SECRET_KEY": "your-super-secret-fernet-key-goes-here",
+  "TRADESTATION": {
+    "api_key": "YOUR_API_KEY",
+    "api_secret": "YOUR_API_SECRET",
+    "username": "YOUR_USERNAME",
+    "password": "YOUR_PASSWORD",
+    "environment": "sim"
+  },
+  "NEWS_API": {
+    "api_key": "YOUR_NEWS_API_KEY",
+    "url": "wss://your-news-api-websocket-url"
+  },
+  "SEC_API": {
+    "api_key": "YOUR_SEC_API_KEY",
+    "url": "wss://your-sec-api-websocket-url"
+  }
+}

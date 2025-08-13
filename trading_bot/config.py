@@ -1,46 +1,45 @@
+import json
 import os
 
-# --- Security Configuration ---
-# This key is used for encrypting and decrypting sensitive data like API keys.
-# In a production environment, this should be loaded securely, for example from
-# an environment variable or a secret management service.
-# You can generate a new key by running:
-# from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())
-SECRET_KEY = os.environ.get("SECRET_KEY", "your-super-secret-fernet-key-goes-here")
+# --- Load Configuration from config.json ---
 
+CONFIG_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.json')
 
-# --- Broker Configuration (TradeStation) ---
-# It is strongly recommended to use environment variables for these settings.
-# The application will look for these environment variables first, and fall back
-# to the hardcoded values below if they are not found. The hardcoded values
-# are placeholders and should be replaced by the user.
-
-TRADESTATION_SETTINGS = {
-    "api_key": os.environ.get("TS_API_KEY", "YOUR_API_KEY"),
-    "api_secret": os.environ.get("TS_API_SECRET", "YOUR_API_SECRET"),
-    "username": os.environ.get("TS_USERNAME", "YOUR_USERNAME"),
-    "password": os.environ.get("TS_PASSWORD", "YOUR_PASSWORD"),
-    # Set to 'live' for real trading or 'sim' for paper trading.
-    "environment": os.environ.get("TS_ENVIRONMENT", "sim"),
-}
-
-# --- API Endpoints ---
+# Default empty values
+SECRET_KEY = None
+TRADESTATION_SETTINGS = {}
+NEWS_API_SETTINGS = {}
+SEC_API_SETTINGS = {}
 TRADESTATION_URLS = {
     "live": "https://api.tradestation.com/v3",
     "sim": "https://sim-api.tradestation.com/v3",
     "auth": "https://signin.tradestation.com/oauth/token",
 }
 
-# --- News API Configuration ---
-# Using placeholders for a generic news streaming service
-NEWS_API_SETTINGS = {
-    "api_key": os.environ.get("NEWS_API_KEY", "YOUR_NEWS_API_KEY"),
-    "url": os.environ.get("NEWS_API_URL", "wss://your-news-api-websocket-url"),
-}
+try:
+    with open(CONFIG_FILE_PATH, 'r') as f:
+        config_data = json.load(f)
 
-# --- SEC Filings API Configuration ---
-# Using placeholders for a generic SEC filings streaming service
-SEC_API_SETTINGS = {
-    "api_key": os.environ.get("SEC_API_KEY", "YOUR_SEC_API_KEY"),
-    "url": os.environ.get("SEC_API_URL", "wss://your-sec-api-websocket-url"),
+    SECRET_KEY = config_data.get("FERNET_SECRET_KEY")
+    TRADESTATION_SETTINGS = config_data.get("TRADESTATION", {})
+    NEWS_API_SETTINGS = config_data.get("NEWS_API", {})
+    SEC_API_SETTINGS = config_data.get("SEC_API", {})
+
+except FileNotFoundError:
+    print(f"[!] CONFIGURATION ERROR: `config.json` not found at {CONFIG_FILE_PATH}.")
+    print("[!] Please copy `config.json.example` to `config.json` and fill in your credentials.")
+    # Exiting here is an option in a real app to prevent running with no config
+    # import sys
+    # sys.exit(1)
+except json.JSONDecodeError:
+    print(f"[!] CONFIGURATION ERROR: `config.json` is not a valid JSON file.")
+except Exception as e:
+    print(f"[!] An unexpected error occurred while reading the configuration: {e}")
+
+# --- Legacy URL mapping (still useful) ---
+# This part doesn't need to be in the JSON file as it's not a secret.
+TRADESTATION_URLS = {
+    "live": "https://api.tradestation.com/v3",
+    "sim": "https://sim-api.tradestation.com/v3",
+    "auth": "https://signin.tradestation.com/oauth/token",
 }
