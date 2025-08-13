@@ -173,3 +173,30 @@ class TradeStationAPI:
         # parameter names and values. This is a common structure.
         # The endpoint might be slightly different, e.g., /marketdata/barcharts/{symbol}
         return self._make_request("GET", f"/marketdata/barcharts/{symbol}", params=params)
+
+    def place_order(self, account_key, symbol, quantity, order_type, trade_action):
+        """
+        Places a trade order.
+
+        :param account_key: The account to place the order in.
+        :param symbol: The stock symbol.
+        :param quantity: The number of shares.
+        :param order_type: 'Market', 'Limit', 'Stop', etc.
+        :param trade_action: 'BUY' or 'SELL'.
+        :return: A dictionary containing the order confirmation details.
+        """
+        endpoint = f"/brokerage/accounts/{account_key}/orders"
+
+        # This is a representative payload. The actual required fields may vary
+        # based on the TradeStation API documentation for different order types.
+        order_payload = {
+            "AccountID": account_key,
+            "Symbol": symbol,
+            "Quantity": str(quantity),
+            "OrderType": order_type,
+            "TradeAction": trade_action,
+            "TimeInForce": {"Duration": "DAY"},
+            "Route": "Intelligent",
+        }
+
+        return self._make_request("POST", endpoint, json_data=[order_payload])

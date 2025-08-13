@@ -44,24 +44,35 @@
             </div>
         </div>
 
-        <!-- Active Strategies Card -->
+        <!-- Live Portfolio Card -->
         <div class="card card-full-width">
             <div class="card-header">
-                <h3>Active Strategies</h3>
+                <h3>Live Portfolio</h3>
             </div>
             <div class="card-content">
-                {% if active_strategies %}
-                    <ul>
-                    {% for strategy in active_strategies %}
-                        <li>
-                            <strong>{{ strategy.name }}</strong>
-                            (Running on {{ strategy.symbols_count }} symbols) -
-                            Status: <span class="status-badge status-{{ strategy.status | lower }}">{{ strategy.status }}</span>
-                        </li>
-                    {% endfor %}
-                    </ul>
+                {% if portfolio %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Quantity</th>
+                                <th>Entry Price</th>
+                                <th>Market Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for position in portfolio %}
+                            <tr>
+                                <td><strong>{{ position.symbol }}</strong></td>
+                                <td>{{ "%.2f"|format(position.quantity) }}</td>
+                                <td>${{ "%.2f"|format(position.entry_price) }}</td>
+                                <td>${{ "%.2f"|format(position.market_value) }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
                 {% else %}
-                    <p>No strategies are currently active.</p>
+                    <p>No open positions in the portfolio.</p>
                 {% endif %}
             </div>
         </div>

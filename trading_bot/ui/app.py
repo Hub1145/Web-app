@@ -44,31 +44,52 @@ def logout():
 
 # --- Main Application Routes ---
 
+from trading_bot import database
+from trading_bot.brokers.tradestation_api import TradeStationAPI
+
+# --- Helper Functions ---
+def get_status_from_db():
+    """Fetches key-value status data from the database."""
+    with database.get_db_connection() as conn:
+        status_rows = conn.execute("SELECT key, value FROM bot_status").fetchall()
+        return {row['key']: row['value'] for row in status_rows}
+
+def get_portfolio_from_db():
+    """Fetches the current portfolio from the database."""
+    with database.get_db_connection() as conn:
+        return conn.execute("SELECT * FROM portfolio ORDER BY symbol").fetchall()
+
 @app.route('/')
 @login_required
 def dashboard():
-    # Mock data to populate the dashboard
-    mock_account_summary = {
-        "broker_name": "TradeStation (SIM)",
-        "balance": "100,000.00",
-        "equity": "105,250.50",
-        "pnl": 5250.50
-    }
-    mock_bot_status = {
-        "engine_status": "Running",
-        "data_feeds_status": "Connected",
-        "last_activity": "2 minutes ago"
-    }
-    mock_active_strategies = [
-        {"name": "Long-term Downtrend Break", "symbols_count": 5, "status": "Active"},
-        {"name": "Oversold Reclaim", "symbols_count": 3, "status": "Active"},
-    ]
+    # Fetch live data from the database and API
+    bot_status = get_status_from_db()
+    portfolio = get_portfolio_from_db()
+
+    # For live account balance, we need an API client
+    # Note: In a real multi-user system, you'd manage clients better.
+    account_summary = {"broker_name": "TradeStation (SIM)", "balance": "N/A", "equity": "N/A", "pnl": 0}
+    try:
+        api_client = TradeStationAPI()
+        if api_client.api_key and "YOUR_API_KEY" not in api_client.api_key:
+            accounts = api_client.get_user_accounts()
+            if accounts and accounts.get("Accounts"):
+                acc_key = accounts["Accounts"][0]["AccountID"]
+                balances = api_client.get_account_balances(acc_key)
+                if balances and balances.get("Balances"):
+                    bal = balances["Balances"][0]
+                    account_summary["balance"] = f"{float(bal.get('AccountCurrencyBalance', 0)):,.2f}"
+                    account_summary["equity"] = f"{float(bal.get('Equity', 0)):,.2f}"
+                    account_summary["pnl"] = float(bal.get('UnrealizedProfitLoss', 0))
+    except Exception as e:
+        print(f"[UI] Could not fetch live account balance: {e}")
+
     return render_template(
         'dashboard.html',
         username=session.get('username'),
-        account_summary=mock_account_summary,
-        bot_status=mock_bot_status,
-        active_strategies=mock_active_strategies
+        bot_status=bot_status,
+        portfolio=portfolio,
+        account_summary=account_summary
     )
 
 @app.route('/brokers')
@@ -88,6 +109,14 @@ def strategies():
 def settings():
     # Placeholder page
     return "<h1>Settings Page (Placeholder)</h1>"
+
+@app.route('/log')
+@login_required
+def trade_log():
+    """Displays the history of all trades from the database."""
+    with database.get_db_connection() as conn:
+        log_entries = conn.execute("SELECT * FROM trade_log ORDER BY timestamp DESC").fetchall()
+    return render_template('trade_log.html', trade_log=log_entries)
 
 if __name__ == '__main__':
     # Running in debug mode is convenient for development but should be

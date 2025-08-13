@@ -7,26 +7,23 @@ from trading_bot import config
 class NewsFeedClient:
     """
     A client to connect to a real-time news feed via WebSocket.
-    This implementation simulates a connection for demonstration purposes.
     """
     def __init__(self):
         self.settings = config.NEWS_API_SETTINGS
         self.url = self.settings.get("url")
         self.api_key = self.settings.get("api_key")
-        self.ws = None
+        self.ws_app = None
         self.thread = None
 
     def _on_message(self, ws, message):
         """
         Callback function to handle incoming messages.
-        In a real implementation, this would process the news data.
         """
         try:
             data = json.loads(message)
             print(f"[*] Received News: {data.get('headline', 'No Headline')}")
-            # Here, you would add logic to parse the data and perhaps
-            # feed it into a queue for the main trading logic to consume.
-            # Example: self.news_queue.put(data)
+            # In a real application, this data would be passed to a
+            # thread-safe queue for the main logic to consume.
         except json.JSONDecodeError:
             print(f"[*] Received non-JSON message: {message}")
 
@@ -37,67 +34,64 @@ class NewsFeedClient:
     def _on_close(self, ws, close_status_code, close_msg):
         """Callback when the WebSocket connection is closed."""
         print("[*] News Feed connection closed.")
+        # Optional: Implement reconnection logic here.
+        time.sleep(5)
+        print("[*] Reconnecting news feed...")
+        self.connect()
+
 
     def _on_open(self, ws):
         """
         Callback when the WebSocket connection is opened.
-        In a real implementation, you would send an authentication message.
+        Sends an authentication or subscription message.
         """
         print("[*] News Feed connection opened.")
-        # Example authentication message
-        # auth_message = {"action": "auth", "key": self.api_key}
-        # ws.send(json.dumps(auth_message))
+        # Most WebSocket APIs require an authentication or subscription message.
+        # This is a generic example.
+        auth_message = {
+            "action": "auth",
+            "key": self.api_key
+        }
+        try:
+            ws.send(json.dumps(auth_message))
+        except Exception as e:
+            print(f"[!] Error sending auth message to news feed: {e}")
 
     def connect(self):
         """
-        Establishes a connection to the WebSocket server.
-        This method will run in a separate thread to be non-blocking.
+        Establishes a persistent connection to the WebSocket server.
         """
-        # In a real implementation, you would use self.url
-        # For demonstration, we simulate the connection.
-        print(f"Attempting to connect to News Feed at {self.url}...")
+        print(f"Connecting to News Feed at {self.url}...")
+        self.ws_app = websocket.WebSocketApp(
+            self.url,
+            on_open=self._on_open,
+            on_message=self._on_message,
+            on_error=self._on_error,
+            on_close=self._on_close
+        )
 
-        # This part simulates the behavior of a real websocket client
-        # without actually connecting to a live service.
-        self.thread = threading.Thread(target=self._simulate_run)
-        self.thread.daemon = True # Allows main program to exit
+        # Run the WebSocket client in a separate thread
+        self.thread = threading.Thread(target=self.ws_app.run_forever)
+        self.thread.daemon = True
         self.thread.start()
-
-    def _simulate_run(self):
-        """
-        Simulates a running WebSocket client, periodically "receiving" messages.
-        """
-        self._on_open(None)
-        mock_news_items = [
-            {"source": "NewsWire", "headline": "Tech Giant AAPL announces record profits.", "symbols": ["AAPL"]},
-            {"source": "PressRelease", "headline": "Pharma Company PFE gets FDA approval for new drug.", "symbols": ["PFE"]},
-            {"source": "MarketWatch", "headline": "Macroeconomic report shows unexpected inflation dip.", "symbols": ["SPY", "QQQ"]},
-        ]
-
-        try:
-            while True:
-                for item in mock_news_items:
-                    self._on_message(None, json.dumps(item))
-                    time.sleep(15) # Simulate receiving news every 15 seconds
-        except KeyboardInterrupt:
-            self._on_close(None, None, None)
 
     def stop(self):
         """Stops the WebSocket client thread."""
-        if self.ws:
-            self.ws.close()
+        if self.ws_app:
+            self.ws_app.close()
         print("News Feed client stopped.")
 
 
 if __name__ == '__main__':
-    # Example of how to run the client
+    # This is an example of how to run the client.
+    # It will likely fail if the URL in config.py is a placeholder.
     news_client = NewsFeedClient()
     news_client.connect()
 
-    print("News client is running in the background. Press Ctrl+C to stop.")
+    print("News client is running. Press Ctrl+C to stop.")
     try:
-        # Keep the main thread alive to see the output
-        while True:
+        # Keep the main thread alive to see the output from the client thread.
+        while news_client.thread and news_client.thread.is_alive():
             time.sleep(1)
     except KeyboardInterrupt:
         news_client.stop()

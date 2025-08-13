@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Trade Log - Trading Bot{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">Trade Log</h1>
+    <p>Showing the history of all trade attempts.</p>
+
+    <div class="card card-full-width">
+        <div class="card-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Symbol</th>
+                        <th>Strategy</th>
+                        <th>Action</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for trade in trade_log %}
+                    <tr>
+                        <td>{{ trade.timestamp }}</td>
+                        <td><strong>{{ trade.symbol }}</strong></td>
+                        <td>{{ trade.strategy }}</td>
+                        <td>
+                            <span class="{% if trade.action == 'BUY' %}text-success{% else %}text-danger{% endif %}">
+                                {{ trade.action }}
+                            </span>
+                        </td>
+                        <td>{{ "%.2f"|format(trade.quantity) }}</td>
+                        <td>${{ "%.2f"|format(trade.price) if trade.price else 'N/A' }}</td>
+                        <td>
+                            <span class="status-badge {% if trade.status == 'SUCCESS' %}status-running{% else %}status-stopped{% endif %}">
+                                {{ trade.status }}
+                            </span>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center;">No trades have been logged yet.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
