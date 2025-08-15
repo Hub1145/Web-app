@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from functools import wraps
 import os
 
+from trading_bot import config
+
 # Create the Flask app
 # The template_folder is set to be in the same directory as this script
 app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -11,9 +13,7 @@ app = Flask(__name__, template_folder='templates', static_folder='static')
 # In a real app, this default key should NOT be used.
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "a-very-secret-key-for-dev")
 
-# --- User Authentication (Placeholder) ---
-# In a real application, this would be a database lookup.
-DUMMY_USERS = {"admin": "password123"}
+# --- User Authentication ---
 
 def login_required(f):
     @wraps(f)
@@ -28,7 +28,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if DUMMY_USERS.get(username) == password:
+        if username == config.ADMIN_USERNAME and password == config.ADMIN_PASSWORD:
             session['username'] = username
             flash('Login successful!', 'success')
             return redirect(url_for('dashboard'))
@@ -68,9 +68,15 @@ def dashboard():
 
     # For live account balance, we need an API client
     # Note: In a real multi-user system, you'd manage clients better.
-    account_summary = {"broker_name": "TradeStation (SIM)", "balance": "N/A", "equity": "N/A", "pnl": 0}
+    account_summary = {"broker_name": "TradeStation", "balance": "N/A", "equity": "N/A", "pnl": 0}
     try:
-        api_client = TradeStationAPI()
+        # Get trading mode from session, default to 'sim'
+        trading_mode = session.get('trading_mode', 'sim')
+        api_client = TradeStationAPI(environment=trading_mode)
+
+        # Update the summary to show the current mode
+        account_summary["broker_name"] = f"TradeStation ({trading_mode.upper()})"
+
         if api_client.api_key and "YOUR_API_KEY" not in api_client.api_key:
             accounts = api_client.get_user_accounts()
             if accounts and accounts.get("Accounts"):
@@ -104,11 +110,30 @@ def strategies():
     # Placeholder page
     return "<h1>Strategies Management Page (Placeholder)</h1>"
 
-@app.route('/settings')
+@app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
-    # Placeholder page
-    return "<h1>Settings Page (Placeholder)</h1>"
+    if request.method == 'POST':
+        trading_mode = request.form.get('trading_mode')
+        if trading_mode in ['sim', 'live']:
+            # Store in the database for the bot process
+            with database.get_db_connection() as conn:
+                conn.execute("INSERT OR REPLACE INTO bot_status (key, value) VALUES (?, ?)", ("trading_mode", trading_mode))
+                conn.commit()
+            # Also store in session for the UI
+            session['trading_mode'] = trading_mode
+            flash(f'Trading mode set to {trading_mode.upper()}. Bot will use this setting on its next cycle/restart.', 'success')
+        else:
+            flash('Invalid trading mode selected.', 'error')
+        return redirect(url_for('settings'))
+
+    # Read from DB to show the authoritative current setting
+    with database.get_db_connection() as conn:
+        row = conn.execute("SELECT value FROM bot_status WHERE key = 'trading_mode'").fetchone()
+        current_mode = row['value'] if row else 'sim'
+        session['trading_mode'] = current_mode # Sync session with DB on page load
+
+    return render_template('settings.html', current_mode=current_mode)
 
 @app.route('/log')
 @login_required

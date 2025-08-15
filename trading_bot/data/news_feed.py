@@ -1,98 +1,107 @@
-import websocket
+import requests
 import json
 import threading
 import time
+import asyncio
 from trading_bot import config
+from trading_bot.websocket.news_ws_server import NewsWSServer
 
-class NewsFeedClient:
+class MarketAuxNewsFetcher:
     """
-    A client to connect to a real-time news feed via WebSocket.
+    Fetches news from the MarketAux REST API and broadcasts it via a WebSocket server.
     """
-    def __init__(self):
+    def __init__(self, ws_server: NewsWSServer, symbols: list):
         self.settings = config.NEWS_API_SETTINGS
         self.url = self.settings.get("url")
         self.api_key = self.settings.get("api_key")
-        self.ws_app = None
+        self.ws_server = ws_server
+        self.symbols = symbols
         self.thread = None
+        self._stop_event = threading.Event()
 
-    def _on_message(self, ws, message):
+    def _fetch_and_broadcast(self):
         """
-        Callback function to handle incoming messages.
+        The main loop that runs in a thread to fetch and broadcast news.
         """
-        try:
-            data = json.loads(message)
-            print(f"[*] Received News: {data.get('headline', 'No Headline')}")
-            # In a real application, this data would be passed to a
-            # thread-safe queue for the main logic to consume.
-        except json.JSONDecodeError:
-            print(f"[*] Received non-JSON message: {message}")
+        while not self._stop_event.is_set():
+            print("[*] Fetching news from MarketAux...")
+            try:
+                params = {
+                    "api_token": self.api_key,
+                    "symbols": ",".join(self.symbols),
+                    "language": "en",
+                }
+                response = requests.get(self.url, params=params)
+                response.raise_for_status()  # Raise an exception for bad status codes
 
-    def _on_error(self, ws, error):
-        """Callback for WebSocket errors."""
-        print(f"[!] News Feed Error: {error}")
+                news_data = response.json()
 
-    def _on_close(self, ws, close_status_code, close_msg):
-        """Callback when the WebSocket connection is closed."""
-        print("[*] News Feed connection closed.")
-        # Optional: Implement reconnection logic here.
-        time.sleep(5)
-        print("[*] Reconnecting news feed...")
-        self.connect()
+                if "data" in news_data:
+                    for article in news_data["data"]:
+                        # Prepare a message to broadcast
+                        message = json.dumps({
+                            "headline": article.get("title"),
+                            "source": article.get("source"),
+                            "url": article.get("url"),
+                            "summary": article.get("snippet"),
+                            "timestamp": article.get("published_at"),
+                        })
 
+                        # Use asyncio.run_coroutine_threadsafe to call the async broadcast method
+                        # from this synchronous thread.
+                        if self.ws_server.loop:
+                            future = asyncio.run_coroutine_threadsafe(self.ws_server.broadcast(message), self.ws_server.loop)
+                            future.result(timeout=2) # Wait for the broadcast to complete
 
-    def _on_open(self, ws):
-        """
-        Callback when the WebSocket connection is opened.
-        Sends an authentication or subscription message.
-        """
-        print("[*] News Feed connection opened.")
-        # Most WebSocket APIs require an authentication or subscription message.
-        # This is a generic example.
-        auth_message = {
-            "action": "auth",
-            "key": self.api_key
-        }
-        try:
-            ws.send(json.dumps(auth_message))
-        except Exception as e:
-            print(f"[!] Error sending auth message to news feed: {e}")
+                        print(f"[*] Broadcasted news: {article.get('title')}")
 
-    def connect(self):
-        """
-        Establishes a persistent connection to the WebSocket server.
-        """
-        print(f"Connecting to News Feed at {self.url}...")
-        self.ws_app = websocket.WebSocketApp(
-            self.url,
-            on_open=self._on_open,
-            on_message=self._on_message,
-            on_error=self._on_error,
-            on_close=self._on_close
-        )
+            except requests.exceptions.RequestException as e:
+                print(f"[!] Error fetching news from MarketAux: {e}")
+            except Exception as e:
+                print(f"[!] An unexpected error occurred in the news fetcher: {e}")
 
-        # Run the WebSocket client in a separate thread
-        self.thread = threading.Thread(target=self.ws_app.run_forever)
-        self.thread.daemon = True
-        self.thread.start()
+            # Wait for 60 seconds before the next fetch.
+            # MarketAux free plan has limits, so we don't want to poll too frequently.
+            time.sleep(60)
+
+    def start(self):
+        """Starts the news fetcher in a separate daemon thread."""
+        if self.thread is None or not self.thread.is_alive():
+            self._stop_event.clear()
+            self.thread = threading.Thread(target=self._fetch_and_broadcast)
+            self.thread.daemon = True
+            self.thread.start()
+            print("[*] MarketAux News Fetcher thread started.")
 
     def stop(self):
-        """Stops the WebSocket client thread."""
-        if self.ws_app:
-            self.ws_app.close()
-        print("News Feed client stopped.")
+        """Stops the news fetcher thread."""
+        if self.thread and self.thread.is_alive():
+            self._stop_event.set()
+            self.thread.join(timeout=5)
+            print("[*] MarketAux News Fetcher stopped.")
+        self.thread = None
 
-
+# Example of how to run the fetcher
 if __name__ == '__main__':
-    # This is an example of how to run the client.
-    # It will likely fail if the URL in config.py is a placeholder.
-    news_client = NewsFeedClient()
-    news_client.connect()
+    # 1. Start the WebSocket server
+    news_server = NewsWSServer()
+    news_server.start()
 
-    print("News client is running. Press Ctrl+C to stop.")
+    # Give the server a moment to start up
+    time.sleep(2)
+
+    # 2. Start the news fetcher
+    # For the example, we use a predefined list of symbols
+    example_symbols = ["AAPL", "TSLA"]
+    news_fetcher = MarketAuxNewsFetcher(ws_server=news_server, symbols=example_symbols)
+    news_fetcher.start()
+
+    print("News fetcher is running. Press Ctrl+C to stop.")
     try:
-        # Keep the main thread alive to see the output from the client thread.
-        while news_client.thread and news_client.thread.is_alive():
+        # Keep the main thread alive
+        while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        news_client.stop()
-        print("Program terminated.")
+        news_fetcher.stop()
+        news_server.stop()
+        print("\nProgram terminated.")

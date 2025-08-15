@@ -6,7 +6,8 @@ import os
 CONFIG_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.json')
 
 # Default empty values
-SECRET_KEY = None
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "password"
 TRADESTATION_SETTINGS = {}
 NEWS_API_SETTINGS = {}
 SEC_API_SETTINGS = {}
@@ -20,7 +21,8 @@ try:
     with open(CONFIG_FILE_PATH, 'r') as f:
         config_data = json.load(f)
 
-    SECRET_KEY = config_data.get("FERNET_SECRET_KEY")
+    ADMIN_USERNAME = config_data.get("ADMIN_USERNAME", "admin")
+    ADMIN_PASSWORD = config_data.get("ADMIN_PASSWORD", "password")
     TRADESTATION_SETTINGS = config_data.get("TRADESTATION", {})
     NEWS_API_SETTINGS = config_data.get("NEWS_API", {})
     SEC_API_SETTINGS = config_data.get("SEC_API", {})

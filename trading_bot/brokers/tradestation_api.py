@@ -9,11 +9,11 @@ class TradeStationAPI:
     A wrapper for the TradeStation API.
     Handles authentication, token refreshing, and API requests.
     """
-    def __init__(self):
+    def __init__(self, environment="sim"):
         self.settings = config.TRADESTATION_SETTINGS
         self.urls = config.TRADESTATION_URLS
 
-        self.environment = self.settings.get("environment", "sim")
+        self.environment = environment
         self.base_url = self.urls.get(self.environment)
 
         if not self.base_url:
