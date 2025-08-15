@@ -1,0 +1,7 @@
+--- Starting Trading Bot ---
+Initializing database at /app/trading_bot/trading_bot.db...
+Database initialized successfully.
+[*] Initializing bot in 'SIM' mode.
+Error authenticating with TradeStation: 401 Client Error: Unauthorized for url: https://signin.tradestation.com/oauth/token
+Response: No response
+[!] Critical error during initialization: Failed to obtain a valid API token.. Bot cannot start.

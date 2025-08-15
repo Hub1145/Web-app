@@ -1,0 +1,6 @@
+[*] WebSocket server thread started.
+Traceback (most recent call last):
+  File "/app/trading_bot/websocket/news_ws_server.py", line 98, in <module>
+    time.sleep(1) # Give server time to start
+    ^^^^
+NameError: name 'time' is not defined. Did you forget to import 'time'?

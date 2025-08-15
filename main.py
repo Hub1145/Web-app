@@ -8,6 +8,8 @@ from trading_bot.execution.trade_manager import TradeManager
 from trading_bot.strategies.filters import apply_filters
 from trading_bot.strategies.downtrend_break import DowntrendBreakStrategy
 from trading_bot.strategies.oversold_reclaim import OversoldReclaimStrategy
+from trading_bot.websocket.news_ws_server import NewsWSServer
+from trading_bot.data.news_feed import MarketAuxNewsFetcher
 
 def update_bot_status(key: str, value: str):
     """Helper function to update the bot's status in the database."""
@@ -30,7 +32,14 @@ def main():
 
     # 2. Initialize API and Trade Manager
     try:
-        api_client = TradeStationAPI()
+        # Determine trading environment from database setting
+        with database.get_db_connection() as conn:
+            row = conn.execute("SELECT value FROM bot_status WHERE key = 'trading_mode'").fetchone()
+            trading_mode = row['value'] if row else 'sim'
+
+        print(f"[*] Initializing bot in '{trading_mode.upper()}' mode.")
+        api_client = TradeStationAPI(environment=trading_mode)
+
         # Fetch the primary account key to use for trading
         accounts = api_client.get_user_accounts()
         if accounts and accounts.get("Accounts"):
@@ -54,9 +63,17 @@ def main():
     # The universe of symbols to consider
     symbol_universe = ["AAPL", "MSFT", "GOOG", "TSLA", "NVDA", "AMD", "PFE"]
 
+    # 4. Initialize and start News Services
+    news_ws_server = NewsWSServer()
+    news_ws_server.start()
+    time.sleep(1) # Give the server a moment to start
+
+    news_fetcher = MarketAuxNewsFetcher(ws_server=news_ws_server, symbols=symbol_universe)
+    news_fetcher.start()
+
     print("Bot initialized. Starting main loop...")
 
-    # 4. Main application loop
+    # 5. Main application loop
     update_bot_status("engine_status", "Running")
     while True:
         try:
@@ -101,6 +118,8 @@ def main():
 
         except KeyboardInterrupt:
             print("\nBot shutting down...")
+            news_fetcher.stop()
+            news_ws_server.stop()
             update_bot_status("engine_status", "Stopped")
             break
         except Exception as e:
