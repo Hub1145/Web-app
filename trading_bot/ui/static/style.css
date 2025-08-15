@@ -1,8 +1,17 @@
+/*
+    New Color Palette:
+    - Mint Cream (BG): #eaf2ef
+    - Smoky Black (Text): #0d090a
+    - Dark Purple (Headings/Nav BG): #361f27
+    - Palatinate (Accent Dark): #521945
+    - Quinacridone Magenta (Accent Bright): #912f56
+*/
+
 /* General Body & Typography */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #f4f7f9;
-    color: #333;
+    background-color: #eaf2ef; /* Mint Cream */
+    color: #361f27; /* Dark Purple for base text */
     margin: 0;
     line-height: 1.6;
 }
@@ -14,52 +23,49 @@ body {
 }
 
 h1, h2, h3 {
-    color: #2c3e50;
+    color: #521945; /* Palatinate */
+    font-weight: 500;
 }
 
-/* Navigation Bar */
-nav {
-    background-color: #34495e;
-    color: #ecf0f1;
-    padding: 1rem 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.nav-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-.nav-brand {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #ecf0f1;
-    text-decoration: none;
-}
-
-.nav-links {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-}
-
-.nav-links li {
-    margin-left: 20px;
-}
-
-.nav-links a {
-    color: #ecf0f1;
+a {
+    color: #912f56; /* Quinacridone Magenta */
     text-decoration: none;
     transition: color 0.3s;
 }
 
-.nav-links a:hover {
-    color: #1abc9c;
+a:hover {
+    color: #c14074; /* Lighter Magenta from palette */
+}
+
+/* Navigation Bar */
+nav {
+    background-color: #361f27; /* Dark Purple */
+    color: #eaf2ef; /* Mint Cream */
+    padding: 1rem 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+nav h1 {
+    color: #eaf2ef;
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+nav li {
+    margin-left: 25px;
+}
+
+nav a {
+    color: #eaf2ef;
+    font-weight: 500;
 }
 
 /* Login Page */
@@ -68,12 +74,13 @@ nav {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    background-color: #361f27;
 }
 .login-form {
-    background: #fff;
+    background: #ffffff;
     padding: 40px;
     border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     width: 100%;
     max-width: 400px;
 }
@@ -82,62 +89,71 @@ nav {
 }
 .form-group label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #521945;
 }
 .form-group input {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
+    padding: 12px;
+    border: 1px solid #aecdc2; /* Light Mint Cream shade */
     border-radius: 4px;
+    box-sizing: border-box;
 }
 .btn {
     width: 100%;
     padding: 12px;
-    background-color: #3498db;
+    background-color: #912f56; /* Quinacridone Magenta */
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 1rem;
+    font-weight: 600;
     transition: background-color 0.3s;
 }
 .btn:hover {
-    background-color: #2980b9;
+    background-color: #521945; /* Palatinate */
 }
 
 /* Flash Messages & Alerts */
-.alert {
-    padding: 15px;
+.flashes {
+    list-style: none;
+    padding: 0;
     margin-bottom: 20px;
+}
+.flash-success {
+    background-color: #27ae60;
+    color: white;
+    padding: 15px;
     border-radius: 4px;
 }
-.alert-success {
-    background-color: #d4edda;
-    color: #155724;
-}
-.alert-error {
-    background-color: #f8d7da;
-    color: #721c24;
+.flash-error {
+    background-color: #c0392b;
+    color: white;
+    padding: 15px;
+    border-radius: 4px;
 }
 
 /* Dashboard Grid & Cards */
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
 }
 
 .card {
-    background: #fff;
-    padding: 20px;
+    background: #ffffff;
+    padding: 25px;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+    border-top: 4px solid #912f56; /* Magenta accent */
 }
 
 .card-header {
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
+    border-bottom: 1px solid #eaf2ef;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -153,18 +169,22 @@ nav {
 
 /* Status Badges & Text Colors */
 .status-badge {
-    padding: 3px 8px;
-    border-radius: 12px;
+    padding: 4px 10px;
+    border-radius: 15px;
     font-size: 0.8rem;
     font-weight: bold;
     color: #fff;
 }
-.status-running, .status-active, .status-connected {
-    background-color: #2ecc71; /* Green */
+.status-connected, .status-running {
+    background-color: #27ae60; /* Green for positive status */
 }
-.status-stopped, .status-inactive {
-    background-color: #e74c3c; /* Red */
+.status-disconnected, .status-stopped {
+    background-color: #e74c3c; /* Red for negative status */
 }
+.status-error {
+    background-color: #f39c12; /* Orange for error */
+}
+
 .text-success {
     color: #27ae60;
 }
@@ -179,22 +199,36 @@ table {
     margin-top: 10px;
 }
 th, td {
-    padding: 12px;
+    padding: 15px;
     text-align: left;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #eaf2ef;
 }
 th {
-    background-color: #f8f9fa;
-    font-weight: bold;
+    background-color: #fbfcfc; /* Lightest Mint Cream */
+    font-weight: 600;
+    color: #521945;
 }
 tbody tr:hover {
-    background-color: #f1f1f1;
+    background-color: #f2f7f5; /* Light Mint Cream shade */
 }
 
-/* Footer */
-footer {
-    text-align: center;
-    margin-top: 40px;
-    padding: 20px;
-    color: #777;
+/* Settings Form */
+.settings-form {
+    margin-top: 20px;
+}
+.settings-form p {
+    margin-bottom: 20px;
+    color: #361f27;
+}
+.settings-form .form-group {
+    background-color: #fbfcfc;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #eaf2ef;
+}
+.settings-form label {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
